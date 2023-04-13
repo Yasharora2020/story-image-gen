@@ -1,7 +1,5 @@
 service: story
-
 frameworkVersion: '3'
-
 provider:
   name: aws
   runtime: python3.8
@@ -9,46 +7,11 @@ provider:
   profile: macbook
   stage: ${opt:stage, 'dev'}
 
-#custom:
-#  pythonRequirements:
-#    dockerizepip: true
-#    pythonBin: python3
-#    requirementsPath: requirements.txt
-
-#functions:
-#  StoryGenerator1:
-#    handler: story-generator.lambda_handler
-#    environment:
-#      names_table: 'names'
-#      scenes_table: 'scenes'
-#      stories_table: 'stories'
-#     story_bucket: !Ref StoryBucket
-#
-#    iamRoleStatements:
-#      - Effect: Allow
-#        Action: '*'
-#        Resource: '*'
-#    events:
-#      - schedule:
-#          rate: rate(1 day)
-#    package:
-#      exclude:
-#        - .git/**
-#        - .vscode/**        
-#        - .venv/**
-#        - node_modules/**
-#    layers:
-#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:openai:1
-#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:aiohttp:1
-#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:boto3:1
-
-
-
-#plugins:
-#  - serverless-python-requirements
-#  - serverless
+custom:
+  storyGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:story-generator
+  imageGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:image-generator
+  voiceCreatorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:voice-creato
   
-
 
 resources:
   Resources:
@@ -95,14 +58,6 @@ resources:
       Properties:
         BucketName: 'story-bucket93790wef9'
 
-    LambdaInvokePermission:
-      Type: "AWS::Lambda::Permission"
-      Properties:
-        Action: "lambda:InvokeFunction"
-        FunctionName: "image-generator"
-        Principal: "dynamodb.amazonaws.com"
-        SourceArn: !GetAtt StoryTable.StreamArn
-
     DynamoDBStreamEventSourceMapping:
       Type: 'AWS::Lambda::EventSourceMapping'
       Properties:
@@ -114,13 +69,42 @@ resources:
         MaximumRetryAttempts: 1
 
 
- 
+    ImageLambdaInvokePermission: #permission to invoke image generator func when a story is entered in Dynamodb
+      Type: "AWS::Lambda::Permission"
+      Properties:
+        Action: "lambda:InvokeFunction"
+        FunctionName: !Ref imageGeneratorArn
+        Principal: "dynamodb.amazonaws.com"
+        SourceArn: !GetAtt StoryTable.StreamArn
 
-    
-    
+    VoiceLambdaInvokePermission: #permission to invoke Voice creator func when a story is entered in Dynamodb
+      Type: "AWS::Lambda::Permission"
+      Properties:
+        Action: "lambda:InvokeFunction"
+        FunctionName: !Ref voiceCreatorArn
+        Principal: "dynamodb.amazonaws.com"
+        SourceArn: !GetAtt StoryTable.StreamArn
 
+    ImageDynamoDBStreamEventSourceMapping:
+      Type: 'AWS::Lambda::EventSourceMapping'
+      Properties:
+        BatchSize: 100
+        Enabled: true
+        EventSourceArn: !GetAtt StoryTable.StreamArn
+        FunctionName: !Ref imageGeneratorArn
+        StartingPosition: LATEST
+        MaximumRetryAttempts: 1
 
-  
+    VoiceDynamoDBStreamEventSourceMapping:
+      Type: 'AWS::Lambda::EventSourceMapping'
+      Properties:
+        BatchSize: 100
+        Enabled: true
+        EventSourceArn: !GetAtt StoryTable.StreamArn
+        FunctionName: !Ref voiceCreatorArn
+        StartingPosition: LATEST
+        MaximumRetryAttempts: 1
+
   Outputs:
     NameTableArn:
       Value: !GetAtt NameTable.Arn
