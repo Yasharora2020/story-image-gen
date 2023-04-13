@@ -1,0 +1,138 @@
+service: story
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: ap-southeast-2
+  profile: macbook
+  stage: ${opt:stage, 'dev'}
+
+#custom:
+#  pythonRequirements:
+#    dockerizepip: true
+#    pythonBin: python3
+#    requirementsPath: requirements.txt
+
+#functions:
+#  StoryGenerator1:
+#    handler: story-generator.lambda_handler
+#    environment:
+#      names_table: 'names'
+#      scenes_table: 'scenes'
+#      stories_table: 'stories'
+#     story_bucket: !Ref StoryBucket
+#
+#    iamRoleStatements:
+#      - Effect: Allow
+#        Action: '*'
+#        Resource: '*'
+#    events:
+#      - schedule:
+#          rate: rate(1 day)
+#    package:
+#      exclude:
+#        - .git/**
+#        - .vscode/**        
+#        - .venv/**
+#        - node_modules/**
+#    layers:
+#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:openai:1
+#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:aiohttp:1
+#      - arn:aws:lambda:ap-southeast-2:629160642336:layer:boto3:1
+
+
+
+#plugins:
+#  - serverless-python-requirements
+#  - serverless
+  
+
+
+resources:
+  Resources:
+    NameTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        BillingMode: PAY_PER_REQUEST
+        TableName: 'names'
+
+    ScenesTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        BillingMode: PAY_PER_REQUEST
+        TableName: 'scenes'
+
+    StoryTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        BillingMode: PAY_PER_REQUEST
+        StreamSpecification:
+          StreamViewType: 'NEW_IMAGE'
+        TableName: 'stories'
+    
+    StoryBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: 'story-bucket93790wef9'
+
+    LambdaInvokePermission:
+      Type: "AWS::Lambda::Permission"
+      Properties:
+        Action: "lambda:InvokeFunction"
+        FunctionName: "image-generator"
+        Principal: "dynamodb.amazonaws.com"
+        SourceArn: !GetAtt StoryTable.StreamArn
+
+    DynamoDBStreamEventSourceMapping:
+      Type: 'AWS::Lambda::EventSourceMapping'
+      Properties:
+        BatchSize: 100
+        Enabled: true
+        EventSourceArn: !GetAtt StoryTable.StreamArn
+        FunctionName: "image-generator"
+        StartingPosition: LATEST
+        MaximumRetryAttempts: 1
+
+
+ 
+
+    
+    
+
+
+  
+  Outputs:
+    NameTableArn:
+      Value: !GetAtt NameTable.Arn
+      Export:
+        Name: NameTableArn
+    ScenesTableArn:
+      Value: !GetAtt ScenesTable.Arn
+      Export:
+        Name: ScenesTableArn
+    StoryTableArn:
+      Value: !GetAtt StoryTable.Arn
+      Export:
+        Name: StoryTableArn
+
+
