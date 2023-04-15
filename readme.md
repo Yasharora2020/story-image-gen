@@ -26,3 +26,10 @@ This project generates a story based on two inputs: a name and a scene. The inpu
 
 # Still to finish
 
+- fix voice generator
+- fix Front end
+- to add lamday layers
+- deployment commands
+- Tests
+
+
