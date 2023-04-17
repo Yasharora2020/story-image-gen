@@ -7,16 +7,17 @@ provider:
   profile: macbook
   stage: ${opt:stage, 'dev'}
 
-custom:
-  storyGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:story-generator
-  imageGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:image-generator
-  voiceCreatorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:voice-creato
+#custom:
+#  storyGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:story-generator
+#  imageGeneratorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:image-generator
+#  voiceCreatorArn: arn:aws:lambda:ap-southeast-2:${account.id}:function:voice-creator
+
   
 
 resources:
   Resources:
     NameTable:
-      Type: 'AWS::DynamoDB::Table'
+      Type: "AWS::DynamoDB::Table"
       Properties:
         AttributeDefinitions:
           - AttributeName: 'id'
@@ -28,16 +29,16 @@ resources:
         TableName: 'names'
 
     ScenesTable:
-      Type: 'AWS::DynamoDB::Table'
+      Type: "AWS::DynamoDB::Table"
       Properties:
         AttributeDefinitions:
-          - AttributeName: 'id'
-            AttributeType: 'S'
+          - AttributeName: "id"
+            AttributeType: "S"
         KeySchema:
-          - AttributeName: 'id'
-            KeyType: 'HASH'
+          - AttributeName: "id"
+            KeyType: "HASH"
         BillingMode: PAY_PER_REQUEST
-        TableName: 'scenes'
+        TableName: "scenes"
 
     StoryTable:
       Type: 'AWS::DynamoDB::Table'
@@ -58,22 +59,11 @@ resources:
       Properties:
         BucketName: 'story-bucket93790wef9'
 
-    DynamoDBStreamEventSourceMapping:
-      Type: 'AWS::Lambda::EventSourceMapping'
-      Properties:
-        BatchSize: 100
-        Enabled: true
-        EventSourceArn: !GetAtt StoryTable.StreamArn
-        FunctionName: "image-generator"
-        StartingPosition: LATEST
-        MaximumRetryAttempts: 1
-
-
     ImageLambdaInvokePermission: #permission to invoke image generator func when a story is entered in Dynamodb
       Type: "AWS::Lambda::Permission"
       Properties:
         Action: "lambda:InvokeFunction"
-        FunctionName: !Ref imageGeneratorArn
+        FunctionName: !Sub arn:aws:lambda:ap-southeast-2:${AWS::AccountId}:function:image-generator
         Principal: "dynamodb.amazonaws.com"
         SourceArn: !GetAtt StoryTable.StreamArn
 
@@ -81,27 +71,27 @@ resources:
       Type: "AWS::Lambda::Permission"
       Properties:
         Action: "lambda:InvokeFunction"
-        FunctionName: !Ref voiceCreatorArn
+        FunctionName: !Sub arn:aws:lambda:ap-southeast-2:${AWS::AccountId}:function:voice-creator
         Principal: "dynamodb.amazonaws.com"
         SourceArn: !GetAtt StoryTable.StreamArn
 
     ImageDynamoDBStreamEventSourceMapping:
-      Type: 'AWS::Lambda::EventSourceMapping'
+      Type: "AWS::Lambda::EventSourceMapping"
       Properties:
         BatchSize: 100
         Enabled: true
         EventSourceArn: !GetAtt StoryTable.StreamArn
-        FunctionName: !Ref imageGeneratorArn
+        FunctionName: !Sub arn:aws:lambda:ap-southeast-2:${AWS::AccountId}:function:image-generator
         StartingPosition: LATEST
         MaximumRetryAttempts: 1
 
     VoiceDynamoDBStreamEventSourceMapping:
-      Type: 'AWS::Lambda::EventSourceMapping'
+      Type: "AWS::Lambda::EventSourceMapping"
       Properties:
         BatchSize: 100
         Enabled: true
         EventSourceArn: !GetAtt StoryTable.StreamArn
-        FunctionName: !Ref voiceCreatorArn
+        FunctionName: !Sub arn:aws:lambda:ap-southeast-2:${AWS::AccountId}:function:voice-creator
         StartingPosition: LATEST
         MaximumRetryAttempts: 1
 

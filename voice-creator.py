@@ -1,5 +1,8 @@
 import boto3
 import os
+from botocore.exceptions import ClientError
+import logging
+logger = logging.getLogger()
 
 polly = boto3.client('polly')
 
@@ -13,7 +16,7 @@ def text_to_speech(event, context):
         OutputFormat='mp3',
         Text=story_text,
         VoiceId='Joanna', # Choose the voice you prefer
-        TextType='ssml'
+        TextType='text'
     )
 
     audio_data = response['AudioStream'].read()
@@ -24,3 +27,12 @@ def text_to_speech(event, context):
         Body=audio_data,
         ContentType='audio/mpeg'
     )
+
+
+def lambda_handler(event, context):
+    print ("event:", event)
+    try:
+        text_to_speech(event, context)
+    except ClientError as e:
+        logger.exception(f"Failed to create thumbnail: {str(e)}")
+        raise
